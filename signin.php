@@ -11,10 +11,6 @@ if (isset($_REQUEST["logout"]))
 if (isset($_REQUEST["login"]) && isset($_REQUEST["password"]))
 {
 	$user->login($_REQUEST["login"], $_REQUEST["password"]);
-	if (isset($_REQUEST["remember"]))
-	{
-		error_log("remember ".$_REQUEST["remember"]);
-	}
 }
 if (isset($_REQUEST["url"]))
 	$redirect = $_REQUEST["url"];
