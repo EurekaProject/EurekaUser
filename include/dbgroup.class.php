@@ -38,17 +38,35 @@ class group_info extends absgroup_info
 class dbgroup_service
 {
 	var $dbname;
-	function __construct($dbname = "eureka_user", $dbhost = "127.0.0.1")
+	function __construct($eurekadb = "root:root@127.0.0.1/eureka_user")
 	{
-		$this->dbname = $dbname;
-		$this->db = new db("",$dbhost);
+		list($dbuser,$dbhost) = explode('@',$eurekadb);
+		list($dbuser,$dbpass) = explode(':',$dbuser);
+		list($dbhost,$dbname) = explode('/',$dbhost);
+		session_start();
+		if (isset($_SESSION['eurekadb']))
+		{
+			$eurekadb = $_SESSION['eurekadb'];
+			list($dbuser,$dbhost) = explode('@',$eurekadb);
+			list($dbuser,$dbpass) = explode(':',$dbuser);
+			list($dbhost,$dbname) = explode('/',$dbhost);
+		}
+		session_write_close();
+		if (isset($_REQUEST['eurekadb']))
+		{
+			$eurekadb = $_REQUEST['eurekadb'];
+			list($dbuser,$dbhost) = explode('@',$eurekadb);
+			list($dbuser,$dbpass) = explode(':',$dbuser);
+			list($dbhost,$dbname) = explode('/',$dbhost);
+		}
+		$this->db = new db("",$dbhost,$dbuser,$dbpass);
 		if ($this->db->status == 0)
 		{
-			if ($this->db->select_db($this->dbname) == false)
+			if ($this->db->select_db($dbname) == false)
 			{
-				$this->db->create_db($this->dbname);
+				$this->db->create_db($dbname);
 			}
-			$sql = "SHOW TABLES FROM `".$this->dbname."` LIKE 'groups';";
+			$sql = "SHOW TABLES FROM `".$dbname."` LIKE 'groups';";
 			$result = $this->db->query($sql);
 			if (!$result || $result->num_rows() < 1)
 			{

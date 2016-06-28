@@ -59,12 +59,31 @@ class dbuser extends user
 {
 	var $dbname;
 	var $dbhost;
+	var $dbuser;
+	var $dbpass;
 	var $newUser = false;
-	function __construct($dbname = "eureka_user", $dbhost = "localhost", $login = false, $password = false)
+	function __construct($eurekadb = "root:root@127.0.0.1/eureka_user", $login = false, $password = false)
 	{
-		$this->dbname = $dbname;
-		$this->dbhost = $dbhost;
-		$this->db = new db("", $this->dbhost);
+		list($this->dbuser,$this->dbhost) = explode('@',$eurekadb);
+		list($this->dbuser,$this->dbpass) = explode(':',$this->dbuser);
+		list($this->dbhost,$this->dbname) = explode('/',$this->dbhost);
+		session_start();
+		if (isset($_SESSION['eurekadb']))
+		{
+			$eurekadb = $_SESSION['eurekadb'];
+			list($this->dbuser,$this->dbhost) = explode('@',$eurekadb);
+			list($this->dbuser,$this->dbpass) = explode(':',$this->dbuser);
+			list($this->dbhost,$this->dbname) = explode('/',$this->dbhost);
+		}
+		session_write_close();
+		if (isset($_REQUEST['eurekadb']))
+		{
+			$eurekadb = $_REQUEST['eurekadb'];
+			list($this->dbuser,$this->dbhost) = explode('@',$eurekadb);
+			list($this->dbuser,$this->dbpass) = explode(':',$this->dbuser);
+			list($this->dbhost,$this->dbname) = explode('/',$this->dbhost);
+		}
+		$this->db = new db("", $this->dbhost,$this->dbuser,$this->dbpass);
 		if ($this->db->status === 0)
 		{
 			$this->debug = true;
@@ -77,24 +96,24 @@ class dbuser extends user
 			$result = $this->db->query($sql);
 			if (!$result || $result->num_rows() < 1)
 			{
-	$this->db->import(dirname(__FILE__)."/../db/groups.sql");
-	$this->db->import(dirname(__FILE__)."/../db/users.sql");
-	$this->db->import(dirname(__FILE__)."/../db/capabilities.sql");
-	$this->db->import(dirname(__FILE__)."/../db/groupscapabilities.sql");
-	$this->db->close();
-	$this->data["id"] = 0;
-	$this->data["groupid"] = 0;
-	$this->data["login"] = "Administrator";
-	$this->data["is_administrator"] = 1;
-	$this->data["capabilities"]["admin"] = true;
-	$this->data["capabilities"]["chglogin"] = "750";
-	$this->data["capabilities"]["chgpasswd"] = "750";
-	$this->data["capabilities"]["chggroup"] = "750";
-	$this->save();
-	session_start();
-	$_SESSION["Auth"] = $this->data["id"];
-	$_SESSION['NgenUser'] = $this->serialize();
-	session_write_close();
+				$this->db->import(dirname(__FILE__)."/../db/groups.sql");
+				$this->db->import(dirname(__FILE__)."/../db/users.sql");
+				$this->db->import(dirname(__FILE__)."/../db/capabilities.sql");
+				$this->db->import(dirname(__FILE__)."/../db/groupscapabilities.sql");
+				$this->db->close();
+				$this->data["id"] = 0;
+				$this->data["groupid"] = 0;
+				$this->data["login"] = "Administrator";
+				$this->data["is_administrator"] = 1;
+				$this->data["capabilities"]["admin"] = true;
+				$this->data["capabilities"]["chglogin"] = "750";
+				$this->data["capabilities"]["chgpasswd"] = "750";
+				$this->data["capabilities"]["chggroup"] = "750";
+				$this->save();
+				session_start();
+				$_SESSION["Auth"] = $this->data["id"];
+				$_SESSION['NgenUser'] = $this->serialize();
+				session_write_close();
 			}
 			$this->db->close();
 		}
@@ -110,7 +129,7 @@ class dbuser extends user
 
 	protected function _login($name, $lpassword)
 	{
-		$this->db = new db($this->dbname, $this->dbhost);
+		$this->db = new db($this->dbname, $this->dbhost,$this->dbuser,$this->dbpass);
 		if ($lpassword !== "" )
 		{
 			if ($lpassword[0] === "$")
@@ -147,7 +166,7 @@ class dbuser extends user
 
 	protected function _externlogin($name)
 	{
-		$this->db = new db($this->dbname, $this->dbhost);
+		$this->db = new db($this->dbname, $this->dbhost,$this->dbuser,$this->dbpass);
 		$this->data["login"] = $this->db->escape_string($name);
 		$sql = sprintf("SELECT * FROM `users` WHERE login = '%s'",
 						$this->db->escape_string($name));
@@ -230,7 +249,7 @@ class dbuser extends user
 
 	protected function _save()
 	{
-		$this->db = new db($this->dbname, $this->dbhost);
+		$this->db = new db($this->dbname, $this->dbhost,$this->dbuser,$this->dbpass);
 		$sql = "SELECT * FROM `users` WHERE id = ".$this->data["id"];
 		$result = $this->db->query($sql);
 		error_log("dbuser: ".$sql);
