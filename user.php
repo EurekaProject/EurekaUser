@@ -1,5 +1,7 @@
 <?php
 set_include_path(get_include_path().PATH_SEPARATOR.dirname(__FILE__).'/include/');
+if (isset($_REQUEST["site"]))
+	session_name($_REQUEST["site"]);
 if (!isset($insert))
 {
 ?>
